@@ -1,6 +1,7 @@
 import * as S from './styles';
 
 import { useFiles } from '../../context/FileContext';
+import Message from '../message/message';
 import { useState, useRef } from 'react';
 
 import { useClickOutside } from '../../hooks/useClickOutside';
@@ -8,39 +9,47 @@ import type { FileType } from '../../types/types';
 
 function FileDisplay({ title }: {title: string}) {
 
-    const { files, setFiles } = useFiles();
+    const { files, setFiles, setNewFiles } = useFiles();
     const [ open, setOpen] = useState(false);
+    const [message, setMessage] = useState('');
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     useClickOutside(wrapperRef, () => setOpen(false));
-        
 
-    const handleSelectFolder = async () => {
-        const result = await window.electronAPI.selectFolder();
+    const processFiles = (result: FileType[]) => {
+        if (!result || result.length === 0) {
+            setMessage('No files selected');
+            return;
+        }
 
-        const cleanedResult: FileType[] = result.map((file) => ({
+        const cleaned = result.map((file) => ({
             ...file,
             name: file.name
                 .replace(/\.[^.]+$/, '')
                 .trim()
-        }))
+        }));
 
-        setFiles(cleanedResult);
+        setFiles(cleaned);
+        setNewFiles([]);
         setOpen(false);
+    }
+        
+    const handleSelectFolder = async () => {
+        try {
+            const result = await window.electronAPI.selectFolder();
+            processFiles(result);
+        } catch {
+            setMessage('Failed to load folder');
+        }      
     }
 
     const handleSelectFile = async () => {
-        const result = await window.electronAPI.selectFile();
-
-        const cleanedResult: FileType[] = result.map((file) => ({
-            ...file,
-            name: file.name
-                .replace(/\.[^.]+$/, '')
-                .trim()
-        }))
-
-        setFiles(cleanedResult);
-        setOpen(false);
+        try {
+            const result = await window.electronAPI.selectFile();
+            processFiles(result);
+        } catch {
+            setMessage('Failed to load files');
+        }
     }
 
    return(
@@ -67,6 +76,13 @@ function FileDisplay({ title }: {title: string}) {
                 )}
             </S.ButtonContainer>
        </S.Wrapper>
+       {message && 
+            <Message 
+                message={message}
+                open={true}
+                onClose={() => setMessage('')}
+            />
+        }
        </>
    );
 }

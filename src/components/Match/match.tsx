@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import * as S from './styles';
 
 import { useState, useRef } from 'react';
@@ -9,6 +7,7 @@ import { extractShowName, extractEpisodeInfo, getExtension } from '../../utils/f
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { fetchSeason, buildName } from '../../services/tmdb';
 import { getEpisodes, getNameTVDB } from '../../services/tvdb';
+import Message from '../message/message';
 import { search } from '../../services/search';
 import type { MatchType, SeasonData } from "../../types/types";
 import { createLogger } from '../../utils/logger';
@@ -24,6 +23,7 @@ function Match({ onClose }: MatchProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [matches, setMatches] = useState<MatchType[]>([]);
     const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
     const wrapperRef = useRef<HTMLDivElement>(null);
     const modalRef = useRef<HTMLDivElement>(null);
     
@@ -54,6 +54,7 @@ function Match({ onClose }: MatchProps) {
             setIsOpen(true);
         } catch (err) {
             console.error("❌ ERROR in handleMatch:", err);
+            setMessage(`Error searching for a match: ${err}`)
         } finally {
             setLoading(false);
         }
@@ -125,6 +126,9 @@ function Match({ onClose }: MatchProps) {
             setNewFiles(updated);
             setIsOpen(false);
 
+        } catch (err) {
+            console.error("❌ ERROR in handleSelect:", err);
+            setMessage(`Error selecting a match: ${err}`)
         } finally {
             setIsProcessing(false);
         }
@@ -191,6 +195,13 @@ function Match({ onClose }: MatchProps) {
                     </S.Modal>
                 </S.Overlay>
             )}
+            {message && 
+            <Message 
+                message={message}
+                open={true}
+                onClose={() => setMessage('')}
+            />
+        }
         </>
     );
 }

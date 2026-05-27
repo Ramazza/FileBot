@@ -22,6 +22,15 @@ async function getToken(): Promise<string> {
         }),
     });
 
+    if(!res.ok) {
+        switch (res.status) {
+            case 401:
+                throw new Error("Invalid API Key");
+            default:
+                throw new Error(`Failed to fetch token (${res.status})`);
+        }
+    }
+
     const data = await res.json();
     token = data.data.token;
 
@@ -39,6 +48,17 @@ async function getEnglishTitle(seriesId: string): Promise<string | null> {
         }
     );
 
+    if(!res.ok) {
+        switch (res.status) {
+            case 401:
+                throw new Error("Invalid API Key");
+            case 404:
+                throw new Error("english title not found");
+            default:
+                throw new Error(`Failed to fetch english title (${res.status})`);
+        }
+    }
+
     const data = await res.json();
 
     return data.data?.name ?? null;
@@ -54,6 +74,17 @@ export async function searchTVDB(query: string): Promise<MatchType[]> {
             }
         }
     );
+
+    if(!res.ok) {
+        switch (res.status) {
+            case 401:
+                throw new Error("Invalid API Key");
+            case 404:
+                throw new Error("TV show/Movie not found");
+            default:
+                throw new Error(`Failed to fetch TV show/Movie (${res.status})`);
+        }
+    }
 
     const data = await res.json();
 
@@ -124,6 +155,17 @@ export async function getEpisodes(seriesId: string) {
             },
         }
     );
+
+    if(!res.ok) {
+        switch (res.status) {
+            case 401:
+                throw new Error("Invalid API Key");
+            case 404:
+                throw new Error("Episodes not found");
+            default:
+                throw new Error(`Failed to fetch episodes (${res.status})`);
+        }
+    }
 
     const data = await res.json();
 

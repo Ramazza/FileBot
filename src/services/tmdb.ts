@@ -9,11 +9,20 @@ const log = createLogger('TMDB');
 
 export async function fetchSeason( tvId: number, season: number ): Promise<SeasonData> {
 
-    log('season test', season)
-
     const res = await fetch(
         `https://api.themoviedb.org/3/tv/${tvId}/season/${season}?api_key=${API_KEY}`
     );
+
+    if(!res.ok) {
+        switch (res.status) {
+            case 401:
+                throw new Error("Invalid API Key");
+            case 404:
+                throw new Error("Season not found");
+            default:
+                throw new Error(`Failed to fetch season (${res.status})`);
+        }
+    }
 
     const data = await res.json();
 
@@ -59,6 +68,17 @@ export async function searchTMDB(query: string, type: 'tv' | 'movie'): Promise<M
     );
 
     const data = await res.json();
+
+    if(!res.ok) {
+        switch (res.status) {
+            case 401:
+                throw new Error("Invalid API Key");
+            case 404:
+                throw new Error("TV show/Movie not found");
+            default:
+                throw new Error(`Failed to fetch name from TMDB (${res.status})`);
+        }
+    }
 
     log('searchTMDB', {
         query,
