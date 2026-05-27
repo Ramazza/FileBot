@@ -2,6 +2,7 @@ import * as S from './styles';
 
 import { useState } from 'react';
 import { useFiles } from '../../context/FileContext';
+import { createLogger } from "../../utils/logger";
 
 import Button from '../../components/button/button';
 import FileDisplay from '../../components/fileDisplay/fileDisplay';
@@ -9,11 +10,15 @@ import NewFileDisplay from '../../components/newFileDisplay/newFileDisplay';
 import Match from '../../components/Match/match';
 import Message from '../../components/message/message';
 
+
 function Home() {
 
     const [match, setMatch] = useState(false);
     const [message, setMessage] = useState('');
     const {files, setFiles, newFiles, setNewFiles} = useFiles();
+
+    const log = createLogger('Main');
+    
 
     const handleMatch = () => {
         setMatch(!match);
@@ -21,12 +26,12 @@ function Home() {
 
     const handleRename = async () => {
         if (!files.length || !newFiles.length) {
-            console.log("Nothing to rename");
+            log.warn("Nothing to rename");
             return;
         }
 
         if (files.length !== newFiles.length) {
-            console.log("Files and newFiles mismatch");
+            log.warn("Files and newFiles mismatch");
             return;
         }
 
@@ -34,13 +39,13 @@ function Home() {
 
         if (result.success) {
             setMessage('Successfully renamed the files');
+            log.success('renameFiles');
             setFiles([]);
             setNewFiles([]);
         } else {
             setMessage('Something went wrong');
+            log.error('renameFiles');
         }
-
-        console.log("RENAME RESULT:", result);
     }
 
    return(

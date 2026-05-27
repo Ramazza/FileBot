@@ -14,6 +14,12 @@ export async function fetchSeason( tvId: number, season: number ): Promise<Seaso
     );
 
     if(!res.ok) {
+        log.error('fetchSeason', {
+            tvId,
+            season,
+            status: res.status
+        });
+
         switch (res.status) {
             case 401:
                 throw new Error("Invalid API Key");
@@ -26,7 +32,7 @@ export async function fetchSeason( tvId: number, season: number ): Promise<Seaso
 
     const data = await res.json();
 
-    log('fetchSeason', { tvId, season, episodes: data.episodes?.length });
+    log.success('fetchSeason', { tvId, season, episodes: data.episodes?.length });
 
     return data;
 }
@@ -36,11 +42,16 @@ export function buildName( match: MatchType, episodeInfo?: EpisodeInfo, seasonDa
     // 🎬 Movie
     if (match.type === 'movie') {
         const year = match.date?.split('-')[0];
+        log.info('buildName:movie', {
+            name: match.name,
+            year
+        });
         return `${match.name} (${year})`;
     }
 
     // 📺 No episode info
     if (!episodeInfo) {
+        log.warn('buildName:noEpisodeInfo', { name: match.name });
         return match.name;
     }
 
@@ -48,12 +59,24 @@ export function buildName( match: MatchType, episodeInfo?: EpisodeInfo, seasonDa
     const episode = episodeInfo.episode.padStart(2, '0');
 
     if (!seasonData?.episodes) {
+        log.warn('buildName:noSeasonData', {
+            name: match.name,
+            season,
+            episode
+        });
         return `${match.name} - S${season}E${episode}`;
     }
 
     const ep = seasonData.episodes.find(
         (e) => e.episode_number === Number(episodeInfo.episode)
     );
+
+    log.debug?.('buildName:tv', {
+        name: match.name,
+        season,
+        episode,
+        hasEpisodeName: !!ep
+    });
 
     return ep
         ? `${match.name} - S${season}E${episode} - ${ep.name}`
@@ -67,9 +90,13 @@ export async function searchTMDB(query: string, type: 'tv' | 'movie'): Promise<M
         `https://api.themoviedb.org/3/search/${type}?api_key=${API_KEY}&query=${encodeURIComponent(query)}`
     );
 
-    const data = await res.json();
-
     if(!res.ok) {
+        log.error('searchTMDB', {
+            query,
+            type,
+            status: res.status
+        });
+
         switch (res.status) {
             case 401:
                 throw new Error("Invalid API Key");
@@ -80,7 +107,9 @@ export async function searchTMDB(query: string, type: 'tv' | 'movie'): Promise<M
         }
     }
 
-    log('searchTMDB', {
+    const data = await res.json();
+
+    log.success('searchTMDB', {
         query,
         type,
         totalResults: data.results?.length ?? 0,

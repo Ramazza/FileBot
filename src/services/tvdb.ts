@@ -23,6 +23,10 @@ async function getToken(): Promise<string> {
     });
 
     if(!res.ok) {
+        log.error('getToken', {
+            status: res.status
+        });
+
         switch (res.status) {
             case 401:
                 throw new Error("Invalid API Key");
@@ -33,6 +37,8 @@ async function getToken(): Promise<string> {
 
     const data = await res.json();
     token = data.data.token;
+
+    log.success('getToken', { received: !!token });
 
     return token!;
 }
@@ -49,6 +55,11 @@ async function getEnglishTitle(seriesId: string): Promise<string | null> {
     );
 
     if(!res.ok) {
+        log.error('getEnglishTitle', {
+            seriesId,
+            status: res.status
+        });
+
         switch (res.status) {
             case 401:
                 throw new Error("Invalid API Key");
@@ -60,6 +71,10 @@ async function getEnglishTitle(seriesId: string): Promise<string | null> {
     }
 
     const data = await res.json();
+
+    log.success('getEnglishTitle', {
+        englishName: data.data?.name
+    });
 
     return data.data?.name ?? null;
 }
@@ -76,6 +91,11 @@ export async function searchTVDB(query: string): Promise<MatchType[]> {
     );
 
     if(!res.ok) {
+        log.error('searchTVDB', {
+            query,
+            status: res.status
+        });
+
         switch (res.status) {
             case 401:
                 throw new Error("Invalid API Key");
@@ -88,7 +108,7 @@ export async function searchTVDB(query: string): Promise<MatchType[]> {
 
     const data = await res.json();
 
-    log('searchTVDB', {
+    log.success('searchTVDB', {
             query,
             totalResults: data.results?.length ?? 0,
             topResults: data.results?.slice(0, 3).map((r: TVDBResult) => ({
@@ -124,10 +144,12 @@ export async function getNameTVDB(
     episodes?: TVDBEpisode[] | null
 ) {
     if (!episodeInfo) {
+        log.warn('getNameTVDB:noEpisodeInfo' , { name: match.name });
         return match.name;
     }
 
     if (!episodes || episodes.length === 0) {
+        log.warn('getNameTVDB:noEpisodes', { name: match.name });
         return `${match.name} - S${episodeInfo.season}E${episodeInfo.episode}`;
 
     }
@@ -139,8 +161,19 @@ export async function getNameTVDB(
     );
 
     if (!ep) {
+        log.warn('getNameTVDB:episodeNotFound', {
+            name: match.name,
+            season: episodeInfo.season,
+            episode: episodeInfo.episode
+        });
         return `${match.name} - S${episodeInfo.season}E${episodeInfo.episode}`;
     }
+
+    log.info('getNameTVDB', {
+        name: match.name,
+        episodeInfo: `S${episodeInfo.season}E${episodeInfo.episode}`,
+        episodeName: ep.name
+    })
 
     return `${match.name} - S${episodeInfo.season}E${episodeInfo.episode} - ${ep.name}`
 }
@@ -157,6 +190,11 @@ export async function getEpisodes(seriesId: string) {
     );
 
     if(!res.ok) {
+        log.error('getEpisodes', {
+            seriesId,
+            status: res.status
+        });
+
         switch (res.status) {
             case 401:
                 throw new Error("Invalid API Key");
@@ -168,6 +206,10 @@ export async function getEpisodes(seriesId: string) {
     }
 
     const data = await res.json();
+
+    log.success('getEpisodes', { 
+        seriesId,
+        count: data.data?.episodes?.length ?? 0});
 
     return data.data?.episodes ?? [];
 }

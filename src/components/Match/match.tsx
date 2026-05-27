@@ -32,12 +32,16 @@ function Match({ onClose }: MatchProps) {
     const log = createLogger('Match');
 
     async function handleMatch(provider: 'tmdb' | 'tvdb', type: 'tv' | 'movie') {
-        log('handleMatch files:', files);
+        log.info('Starting match search', {
+            provider,
+            type,
+            filesCount: files.length
+        });
 
         const file = files[0];
 
         if (!file) {
-            log('❌ No file selected');
+            log.error('No file selected');
             return;
         }
 
@@ -48,12 +52,20 @@ function Match({ onClose }: MatchProps) {
         try {
             const results = await search(provider, type, query);
 
-            log('Search results:', results);
+            log.info('Search completed', {
+                resultsCount: results.length,
+                query
+            });
 
             setMatches(results);
             setIsOpen(true);
         } catch (err) {
-            console.error("❌ ERROR in handleMatch:", err);
+            log.error('Match search failed', {
+                provider,
+                type,
+                query,
+                err
+            });
             setMessage(`Error searching for a match: ${err}`)
         } finally {
             setLoading(false);
@@ -61,7 +73,7 @@ function Match({ onClose }: MatchProps) {
     }
 
     async function handleSelect(match: MatchType) {
-        log('Selected match:', match);
+        log.info('Selected match:', match);
 
         const normalizedFiles = files.map(f => ({
             ...f,
@@ -103,6 +115,11 @@ function Match({ onClose }: MatchProps) {
                 const ext = getExtension(file.name);
                 const episodeInfo = extractEpisodeInfo(file.name, file.path);
 
+                log.debug?.('Processing file', {
+                    original: file.name,
+                    episodeInfo,
+                });
+
                 let baseName;
 
                 if (match.provider === 'tmdb') {
@@ -116,6 +133,13 @@ function Match({ onClose }: MatchProps) {
                     baseName = getNameTVDB(match, episodeInfo, episodes);
                 }
 
+                const finalName = `${baseName}${ext}`;
+
+                log.debug?.('File renamed', {
+                    from: file.name,
+                    to: finalName
+                });
+
                 return {
                     ...file,
                     name: `${baseName}${ext}`,
@@ -124,10 +148,18 @@ function Match({ onClose }: MatchProps) {
             });
 
             setNewFiles(updated);
+            log.success('Batch rename complete', {
+                totalFiles: updated.length,
+                match: match.name
+            });
             setIsOpen(false);
 
         } catch (err) {
-            console.error("❌ ERROR in handleSelect:", err);
+            log.error('File processing failed', {
+                match,
+                filesCount: files.length,
+                err
+            });
             setMessage(`Error selecting a match: ${err}`)
         } finally {
             setIsProcessing(false);

@@ -47,9 +47,6 @@ export function extractShowName(filename: string, type: string) {
 // Assumes season 01 if no season info is found
 export function extractEpisodeInfo(filename: string, path?: string) {
 
-    console.log('[DEBUG] path:', path);
-    console.log('[DEBUG] seasonFromFolder:', extractSeasonFromFolder(path));
-
     const name = filename.replace(/\.(mkv|mp4|avi|mov)$/i, '');
 
     const match =
@@ -96,13 +93,13 @@ export function extractSeasonFromFolder(path?: string): string | undefined {
         path.match(/s(\d{1,2})/i) ||
         path.match(/temporada[\s._-]?(\d{1,2})/i);
 
-        return match ? match[1].padStart(2, '0') : undefined;
+    return match ? match[1].padStart(2, '0') : undefined;
+        
 }
 
 // Extracts file extension including the dot (".mkv", ".mp4")
 // Returns empty string if no extension is found
 export function getExtension(filename: string) {
     const match = filename.match(/\.(mkv|mp4|avi|mov)$/i);
-    console.log('extension', match)
     return match ? match[0].toLocaleLowerCase() : '';
 }
