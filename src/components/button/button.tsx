@@ -1,9 +1,14 @@
 import * as S from './styles';
 
-function Button({ title }: {title: string}) {
+type Props = {
+    title: string;
+    onClick?: () => void;
+}
+
+function Button({ title, onClick }: Props) {
 
    return(
-       <S.Wrapper>
+       <S.Wrapper onClick={onClick}>
             <S.Title>{title}</S.Title>
        </S.Wrapper>
    );

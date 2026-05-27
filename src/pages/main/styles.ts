@@ -1,5 +1,9 @@
 import styled from "styled-components";
 
+export const Container = styled.div`
+  
+`;
+
 export const HomeWrapper = styled.div`
     
 `;
@@ -21,6 +25,8 @@ export const BodyWrapper = styled.div`
   display: flex;
   justify-content: center;
   flex-direction: row;
+  gap: 1rem;
+  position: relative;
 `;
 
 export const ButtonWrapper = styled.div`
@@ -29,4 +35,9 @@ export const ButtonWrapper = styled.div`
   justify-content: center;
   flex-direction: column;
   width: 10%;
+  position: relative;
+`;
+
+export const Overlay = styled.div`
+  
 `;
