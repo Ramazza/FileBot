@@ -77,31 +77,29 @@ function Match({ onClose }: MatchProps) {
 
         const normalizedFiles = files.map(f => ({
             ...f,
-            path: f.path ?? '' 
+            path: f.path ?? ''
         }));
 
         setIsProcessing(true);
 
         try {
-            // 👉 TVDB still works as before
+            // 👉 TVDB episodes
             const episodes =
                 match.provider === 'tvdb'
                     ? await getEpisodes(String(match.id))
                     : null;
 
-            // 👉 Only needed for TMDB TV
+            // 👉 TMDB season cache
             const seasonMap = new Map<string, SeasonData>();
 
             if (match.provider === 'tmdb' && match.type === 'tv') {
 
-                // 1. discover seasons needed
                 const seasonsNeeded = new Set<string>(
                     normalizedFiles
                         .map(f => extractEpisodeInfo(f.name, f.path)?.season)
                         .filter((season): season is string => season !== undefined)
                 );
 
-                // 2. fetch all seasons once
                 await Promise.all(
                     [...seasonsNeeded].map(async (season) => {
                         const data = await fetchSeason(match.id, Number(season));
@@ -110,48 +108,53 @@ function Match({ onClose }: MatchProps) {
                 );
             }
 
-            // 👉 Now process files (NO API CALLS HERE)
-            const updated = normalizedFiles.map((file) => {
-                const ext = getExtension(file.name);
-                const episodeInfo = extractEpisodeInfo(file.name, file.path);
+            // 👉 FIXED PART (async map + await)
+            const updated = await Promise.all(
+                normalizedFiles.map(async (file) => {
+                    const ext = getExtension(file.name);
+                    const episodeInfo = extractEpisodeInfo(file.name, file.path);
 
-                log.debug?.('Processing file', {
-                    original: file.name,
-                    episodeInfo,
-                });
+                    log.debug?.('Processing file', {
+                        original: file.name,
+                        episodeInfo,
+                    });
 
-                let baseName;
+                    let baseName: string;
 
-                if (match.provider === 'tmdb') {
-                    const seasonData = episodeInfo
-                        ? seasonMap.get(episodeInfo.season)
-                        : undefined;
+                    if (match.provider === 'tmdb') {
+                        const seasonData = episodeInfo
+                            ? seasonMap.get(episodeInfo.season)
+                            : undefined;
 
-                    baseName = buildName(match, episodeInfo, seasonData);
+                        baseName = buildName(match, episodeInfo, seasonData);
 
-                } else {
-                    baseName = getNameTVDB(match, episodeInfo, episodes);
-                }
+                    } else {
+                        // ✅ THIS WAS THE BUG
+                        baseName = await getNameTVDB(match, episodeInfo, episodes);
+                    }
 
-                const finalName = `${baseName}${ext}`;
+                    const finalName = `${baseName}${ext}`;
 
-                log.debug?.('File renamed', {
-                    from: file.name,
-                    to: finalName
-                });
+                    log.debug?.('File renamed', {
+                        from: file.name,
+                        to: finalName
+                    });
 
-                return {
-                    ...file,
-                    name: `${baseName}${ext}`,
-                    path: file.path,
-                };
-            });
+                    return {
+                        ...file,
+                        name: finalName,
+                        path: file.path,
+                    };
+                })
+            );
 
             setNewFiles(updated);
+
             log.success('Batch rename complete', {
                 totalFiles: updated.length,
                 match: match.name
             });
+
             setIsOpen(false);
 
         } catch (err) {
@@ -160,7 +163,7 @@ function Match({ onClose }: MatchProps) {
                 filesCount: files.length,
                 err
             });
-            setMessage(`Error selecting a match: ${err}`)
+            setMessage(`Error selecting a match: ${err}`);
         } finally {
             setIsProcessing(false);
         }
@@ -198,7 +201,7 @@ function Match({ onClose }: MatchProps) {
 
                         {matches.length === 0 && <p>No results</p>}
 
-                        {matches.slice(0,5).map((match) => (
+                        {matches.slice(0,10).map((match) => (
                             <S.Button
                                 variant = 'primary'
                                 key={match.id}

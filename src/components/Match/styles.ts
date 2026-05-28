@@ -58,6 +58,8 @@ export const Overlay = styled.div`
 `;
 
 export const Modal = styled.div`
+  max-height: 80vh;
+
   background: #3c3f41;
   padding: 20px;
   border-radius: 8px;
@@ -67,6 +69,7 @@ export const Modal = styled.div`
   flex-direction: column;
   gap: 10px;
 
+  overflow-y: auto;
 `;
 
 export const Button = styled.button<{ variant: 'primary' | 'secondary'} >`

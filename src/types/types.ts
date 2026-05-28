@@ -11,8 +11,8 @@ export type TMDBResult = {
 export type TVDBResult = {
     id: string,
     name: string,
-    first_air_date: string
-    poster_path: string | null;
+    first_air_time: string
+    thumbnail: string | null;
     poster_url?: string;
 }
 

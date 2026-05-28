@@ -114,7 +114,8 @@ export async function searchTVDB(query: string): Promise<MatchType[]> {
             topResults: data.results?.slice(0, 3).map((r: TVDBResult) => ({
                 id: r.id,
                 name: r.name ?? r.name,
-                date: r.first_air_date,
+                date: r.first_air_time,
+                poster: r.thumbnail
             })),
         });
 
@@ -127,8 +128,8 @@ export async function searchTVDB(query: string): Promise<MatchType[]> {
             return {
                 id: cleanedId,
                 name: englishName ?? r.name ?? 'Unknown',
-                date: r.first_air_date,
-                poster: r.poster_url ?? null,
+                date: r.first_air_time,
+                poster: r.thumbnail ?? null,
                 type: 'tv',
                 provider: 'tvdb',
             };
@@ -206,6 +207,8 @@ export async function getEpisodes(seriesId: string) {
     }
 
     const data = await res.json();
+
+    log.info('data', data)
 
     log.success('getEpisodes', { 
         seriesId,

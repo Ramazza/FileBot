@@ -18,6 +18,7 @@ export function extractShowName(filename: string, type: string) {
             .replace(/YTS/gi, '') 
             .replace(/\d{3,4}p/gi, '') 
             .replace(/x264|x265/gi, '') 
+            .replace(/[[]]/g, '')
     } 
 
     if (type === 'movie') {
@@ -31,6 +32,7 @@ export function extractShowName(filename: string, type: string) {
             .replace(/YTS/gi, '') 
             .replace(/\d{3,4}p/gi, '') 
             .replace(/x264|x265/gi, '') 
+            .replace(/[[]]/g, '')
         }
 
      result = result
