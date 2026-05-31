@@ -3,14 +3,12 @@ import * as S from './styles';
 import { useState, useRef } from 'react';
 import { useFiles } from '../../context/FileContext';
 
-import { extractShowName, extractEpisodeInfo, getExtension } from '../../utils/filename';
 import { useClickOutside } from '../../hooks/useClickOutside';
-import { fetchSeason, buildName } from '../../services/tmdb';
-import { getEpisodes, getNameTVDB } from '../../services/tvdb';
 import Message from '../message/message';
-import { search } from '../../services/search';
-import type { MatchType, SeasonData } from "../../types/types";
+import type { MatchType } from "../../types/types";
 import { createLogger } from '../../utils/logger';
+import { findMatches } from '../../services/matchService';
+import { processSelection } from '../../services/processSelection';
 
 type MatchProps = {
     onClose: () => void;
@@ -32,12 +30,6 @@ function Match({ onClose }: MatchProps) {
     const log = createLogger('Match');
 
     async function handleMatch(provider: 'tmdb' | 'tvdb', type: 'tv' | 'movie') {
-        log.info('Starting match search', {
-            provider,
-            type,
-            filesCount: files.length
-        });
-
         const file = files[0];
 
         if (!file) {
@@ -45,124 +37,47 @@ function Match({ onClose }: MatchProps) {
             return;
         }
 
-        const query = extractShowName(file.name, type);
-
         setLoading(true);
 
         try {
-            const results = await search(provider, type, query);
+            const { results, query } = await findMatches({
+            fileName: file.name,
+            provider,
+            type,
+            });
 
             log.info('Search completed', {
-                resultsCount: results.length,
-                query
+            resultsCount: results.length,
+            query,
             });
 
             setMatches(results);
             setIsOpen(true);
         } catch (err) {
-            log.error('Match search failed', {
-                provider,
-                type,
-                query,
-                err
-            });
-            setMessage(`Error searching for a match: ${err}`)
+            setMessage(`Error searching for a match: ${err}`);
         } finally {
             setLoading(false);
         }
     }
 
     async function handleSelect(match: MatchType) {
-        log.info('Selected match:', match);
-
-        const normalizedFiles = files.map(f => ({
-            ...f,
-            path: f.path ?? ''
-        }));
-
         setIsProcessing(true);
 
         try {
-            // 👉 TVDB episodes
-            const episodes =
-                match.provider === 'tvdb'
-                    ? await getEpisodes(String(match.id))
-                    : null;
-
-            // 👉 TMDB season cache
-            const seasonMap = new Map<string, SeasonData>();
-
-            if (match.provider === 'tmdb' && match.type === 'tv') {
-
-                const seasonsNeeded = new Set<string>(
-                    normalizedFiles
-                        .map(f => extractEpisodeInfo(f.name, f.path)?.season)
-                        .filter((season): season is string => season !== undefined)
-                );
-
-                await Promise.all(
-                    [...seasonsNeeded].map(async (season) => {
-                        const data = await fetchSeason(match.id, Number(season));
-                        seasonMap.set(season, data);
-                    })
-                );
-            }
-
-            // 👉 FIXED PART (async map + await)
-            const updated = await Promise.all(
-                normalizedFiles.map(async (file) => {
-                    const ext = getExtension(file.name);
-                    const episodeInfo = extractEpisodeInfo(file.name, file.path);
-
-                    log.debug?.('Processing file', {
-                        original: file.name,
-                        episodeInfo,
-                    });
-
-                    let baseName: string;
-
-                    if (match.provider === 'tmdb') {
-                        const seasonData = episodeInfo
-                            ? seasonMap.get(episodeInfo.season)
-                            : undefined;
-
-                        baseName = buildName(match, episodeInfo, seasonData);
-
-                    } else {
-                        // ✅ THIS WAS THE BUG
-                        baseName = await getNameTVDB(match, episodeInfo, episodes);
-                    }
-
-                    const finalName = `${baseName}${ext}`;
-
-                    log.debug?.('File renamed', {
-                        from: file.name,
-                        to: finalName
-                    });
-
-                    return {
-                        ...file,
-                        name: finalName,
-                        path: file.path,
-                    };
-                })
-            );
+            const updated = await processSelection({
+            files,
+            match,
+            });
 
             setNewFiles(updated);
 
             log.success('Batch rename complete', {
-                totalFiles: updated.length,
-                match: match.name
+            totalFiles: updated.length,
+            match: match.name,
             });
 
             setIsOpen(false);
-
         } catch (err) {
-            log.error('File processing failed', {
-                match,
-                filesCount: files.length,
-                err
-            });
             setMessage(`Error selecting a match: ${err}`);
         } finally {
             setIsProcessing(false);

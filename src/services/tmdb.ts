@@ -120,7 +120,8 @@ export async function searchTMDB(query: string, type: 'tv' | 'movie'): Promise<M
         })),
     });
 
-    return data.results.map((r: TMDBResult) => ({
+    const results = data.results ?? [];
+    return results.map((r: TMDBResult) => ({
         id: r.id,
         name: r.name ?? r.title ?? 'Unknown',
         date: r.first_air_date ?? r.release_date,

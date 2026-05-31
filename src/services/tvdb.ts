@@ -149,34 +149,37 @@ export async function getNameTVDB(
         return match.name;
     }
 
+    const season = episodeInfo.season.padStart(2, '0');
+    const episode = episodeInfo.episode.padStart(2, '0');
+
     if (!episodes || episodes.length === 0) {
-        log.warn('getNameTVDB:noEpisodes', { name: match.name });
-        return `${match.name} - S${episodeInfo.season}E${episodeInfo.episode}`;
+        log.warn('getNameTVDB:noEpisodes', { name: match.name, season: season, episode: episode });
+        return `${match.name} - S${season}E${episode}`;
 
     }
 
     const ep = episodes.find(
         (e:TVDBEpisode) => 
-            e.seasonNumber === Number(episodeInfo.season) &&
-            e.number === Number(episodeInfo.episode)
+            e.seasonNumber === Number(season) &&
+            e.number === Number(episode)
     );
 
     if (!ep) {
         log.warn('getNameTVDB:episodeNotFound', {
             name: match.name,
-            season: episodeInfo.season,
-            episode: episodeInfo.episode
+            season: season,
+            episode: episode
         });
-        return `${match.name} - S${episodeInfo.season}E${episodeInfo.episode}`;
+        return `${match.name} - S${season}E${episode}`;
     }
 
     log.info('getNameTVDB', {
         name: match.name,
-        episodeInfo: `S${episodeInfo.season}E${episodeInfo.episode}`,
+        episodeInfo: `S${season}E${episode}`,
         episodeName: ep.name
     })
 
-    return `${match.name} - S${episodeInfo.season}E${episodeInfo.episode} - ${ep.name}`
+    return `${match.name} - S${season}E${episode} - ${ep.name}`
 }
 
 export async function getEpisodes(seriesId: string) {
