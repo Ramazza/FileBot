@@ -1,46 +1,43 @@
 // Functions that handle cleaning up filenames 
 
+function normalizeName(name: string) {
+    const junkRegex =
+    /(1080p|720p|2160p|WEBRip|WEB-DL|BluRay|x26[45]|AAC|DDP|HDR|10bit|4K)/i;
+
+    let normalizedName = name  
+        .replace(/\.(mkv|mp4|avi|mov)$/i, '')
+        .replace(/[._\-[\]]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const cutIndex = normalizedName.search(junkRegex);
+
+    if (cutIndex !== -1) {
+        normalizedName = normalizedName.slice(0, cutIndex).trim();
+        return normalizedName;
+    }
+
+    return normalizedName;
+}
+
 // Tries to extract season and episode from filename
 // Supports formats like "S01E02" and "1x02"
 // Falls back to using the last number in the filename as episode (e.g. anime like "1074")
 // Assumes season 01 if no season info is found
-export function extractShowName(filename: string, type: string) {
+export function extractShowName(filename: string, type: 'tv' | 'movie') {
 
-    let result = filename;
+  let normalizedName = normalizeName(filename);
 
-    if (type === 'tv') {
-        result = result
-            .replace(/\.(mkv|mp4|avi|mov)$/i, '')
-            .split(/ - |_-_/)[0] 
-            .replace(/S\d+E\d+/i, '') 
-            .replace(/IMAX|WEBRIP|AAC5|YTS|BZ]|kayoanime/gi, '')
-            .replace(/1-\[/gi, '') 
-            .replace(/YTS/gi, '') 
-            .replace(/\d{3,4}p/gi, '') 
-            .replace(/x264|x265/gi, '') 
-            .replace(/[[]]/g, '')
-    } 
+  if (type === 'tv') {
+    normalizedName = normalizedName.replace(/S\d{1,2}E\d{1,2}/i, '').trim(); // Remvoes S1E23
+    normalizedName = normalizedName.replace(/\d+/, '') // Removes numbers 
+  }
 
-    if (type === 'movie') {
-        result = result
-            .replace(/\b(19|20)\d{2}\b/g, '') 
-            .replace(/\.(mkv|mp4|avi|mov)$/i, '')
-            .split(/ - |_-_/)[0] 
-            .replace(/S\d+E\d+/i, '') 
-            .replace(/IMAX|WEBRIP|AAC5|YTS|BZ]/gi, '')
-            .replace(/1-\[/gi, '') 
-            .replace(/YTS/gi, '') 
-            .replace(/\d{3,4}p/gi, '') 
-            .replace(/x264|x265/gi, '') 
-            .replace(/[[]]/g, '')
-        }
-
-     result = result
-        .replace(/\./g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-    return result;
+  if (type === 'movie') {
+    normalizedName = normalizedName.replace(/\(\d{1,4}\)/, '').trim(); // Removes (2019)
+  }
+  
+  return normalizedName.replace(/\s+/g, ' ').trim();
 }
 
 // Tries to extract season and episode from filename
@@ -49,7 +46,9 @@ export function extractShowName(filename: string, type: string) {
 // Assumes season 01 if no season info is found
 export function extractEpisodeInfo(filename: string, path?: string) {
 
-    const name = filename.replace(/\.(mkv|mp4|avi|mov)$/i, '');
+    const name = normalizeName(filename)
+
+    //const name = filename.replace(/\.(mkv|mp4|avi|mov)$/i, '');
 
     const match =
         name.match(/S(\d{1,2})E(\d{1,2})/i) ||
@@ -62,16 +61,7 @@ export function extractEpisodeInfo(filename: string, path?: string) {
         };
     }
 
-    const clean = name
-        .replace(/\[.*?\]/g, '')
-        .replace(/\(.*?\)/g, '')
-        .replace(/kayoanime/gi, '')
-        .replace(/x264|x265/gi, '')
-        .replace(/\d{3,4}p/gi, '')
-        .replace(/bluray|webrip|web-dl/gi, '')
-        .trim();
-
-    const numbers = clean.match(/\d{1,4}/g);
+    const numbers = name.match(/\d{1,4}/g);
 
     if (numbers && numbers.length > 0) {
         const episode = numbers[numbers.length - 1];
